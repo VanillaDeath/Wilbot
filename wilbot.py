@@ -50,7 +50,7 @@ class Wilbot:
                 'tail': ('tail', 'log')}
     recap_log_lines = 20
     units = {'metric': 'C', 'imperial': 'F', 'kelvin': 'K'}
-    weather_url = "http://api.openweathermap.org/data/2.5/weather?"
+    weather_url = 'http://api.openweathermap.org/data/2.5/weather?'
     timeout = 300
     reconnect_wait = 5
     response_time = 0.1
@@ -78,7 +78,10 @@ class Wilbot:
             }
             with open(config_file, 'a') as conf_file_handle:
                 self.config.write(conf_file_handle)
-            print("Get your bot user's access token from Mastodon and put it in a file called token.secret")
+            print(HTML(
+                "·Get your bot user's access token from Mastodon and put it in a file called <b>token.secret</b>\n"
+                "·Make a field called <b>status</b> in your bot user's profile\n"
+                "·Clear your bot user's notifications unless you want wilbot.py to parse and action them all on first run"))
 
         self.config.read(config_file)
 
