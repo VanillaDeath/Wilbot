@@ -1,6 +1,12 @@
 # Wilbot
 Wilbot is a MegaHAL chatbot for Mastodon written in python. 
 
+MegaHAL is a Markov chain-based chatbot engine originally designed in C in the 1990s; it was popular as a module for eggdrop IRC bots. It was ported to python in the 2000s  
+Mastodon is a federated micro-blogging system built on the ActivityPub protocol.  
+
+This script allows you to turn a Mastodon account into a chatbot that can form basic replies to users based on text it has learned previously. It is designed to only learn from public posts from mentions and users it follows. Users can get the bot to follow them using *@botname follow*
+
+## Usage
 Install the following modules:
 ```bash
 pip3 install Mastodon.py megahal bs4 pytz
