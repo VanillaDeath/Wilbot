@@ -4,8 +4,8 @@ import datetime
 import time
 import re
 import pytz
-import mastodon
-import megahal
+import mastodon # type: ignore
+import megahal # type: ignore
 import requests
 import json
 import bs4
@@ -181,9 +181,9 @@ class Wilbot:
         # Unset major instance variables
         del self.info, self.id, self.username, self.acct, self.handle, self.listener, self.mdon
 
-    def ts(self, date_format: str = '%Y-%m-%d, %H:%M:%S', from_timestamp: int = None) -> str:
+    def ts(self, date_format: str = '%Y-%m-%d, %H:%M:%S', from_timestamp: int = -1) -> str:
         """Returns a date+time string"""
-        if from_timestamp == None:
+        if from_timestamp == -1:
             return str(datetime.datetime.now(pytz.timezone(self.time_zone)).strftime(date_format))
         return str(datetime.datetime.fromtimestamp(from_timestamp, pytz.timezone(self.time_zone)).strftime(date_format))
 
@@ -221,6 +221,7 @@ class Wilbot:
 
         with patch_stdout():
             with ProgressBar(title="Catching up on any missed events...", key_bindings=kb, bottom_toolbar=bottom_toolbar) as pb:
+                notification: dict
                 for notification in pb(self.mdon.notifications(), label='Notifications'):
                     if cancel[0]:
                         break
@@ -245,7 +246,7 @@ class Wilbot:
             return None
         return acct_update
 
-    def parse_notification(self, notification: dict) -> dict | bool:
+    def parse_notification(self, notification: dict) -> dict | bool | None:
         """Handles Mastodon events"""
         acct = notification['account']
         acct_id = acct['id']
@@ -323,11 +324,12 @@ class Wilbot:
                 self.log_error(err, "posting to Mastodon")
                 return False
             return status
+        return None
 
     def handle_notification(self, notification: dict) -> bool:
         """Filter for handling Mastodon events, clears notification either way"""
         handle = notification['type'] in ['mention', 'follow', 'status']
-        handled = self.parse_notification(notification) if handle else False
+        handled = bool(self.parse_notification(notification)) if handle else False
         self.mdon.notifications_dismiss(notification['id'])
         return handled
 
@@ -447,14 +449,14 @@ class Wilbot:
             print(f'"{message}"')
         visibility = 'direct' if is_private else prompt(f"Visibility? [{'/'.join(x for x in Wilbot.visibilities)}/CANCEL] ").lower()
         if visibility not in Wilbot.visibilities or not Wilbot.confirm(f'{Wilbot.visibilities[visibility]} Say "{message}"?'):
-            return Wilbot.cancelled(None)
+            return Wilbot.cancelled()
         return self.post(message, visibility)
 
     def do_train(self, filename: str) -> bool:
         """Make the bot learn from a file of strings"""
         filename = Wilbot.get_message(filename, "Filename:")
         if len(filename) == 0 or not Wilbot.confirm(f"Learn from {filename}?"):
-            return Wilbot.cancelled()
+            return Wilbot.cancelled_False()
         try:
             self.mhal.train(filename)
             self.mhal.sync()
@@ -468,7 +470,7 @@ class Wilbot:
         """Make the bot learn a string"""
         message = Wilbot.get_message(message, "String to learn:")
         if len(message) == 0 or not Wilbot.confirm(f'Learn "{message}"?'):
-            return Wilbot.cancelled()
+            return Wilbot.cancelled_False()
         try:
             self.mhal.learn(message)
             self.mhal.sync()
@@ -482,7 +484,7 @@ class Wilbot:
         """Block a user/domain if block==True, else unblock the user/domain"""
         target = Wilbot.get_message(target, f"User/domain to {'' if block else 'un'}block:")
         if len(target) == 0:
-            return Wilbot.cancelled()
+            return Wilbot.cancelled_False()
         
         # Domain block
         # If not username or username@domain.tld
@@ -492,7 +494,7 @@ class Wilbot:
                 print("⚠️ Make sure you're using username@domain.tld or domain.tld format")
                 return False
             if not Wilbot.confirm(f"{'Block' if block else 'Unblock'} {target}?"):
-                return Wilbot.cancelled()
+                return Wilbot.cancelled_False()
             self.mdon.domain_block(target) if block else self.mdon.domain_unblock(target)
             self.log(f"{'⛔' if block else '🆗'} @{self.username} {'' if block else 'un'}blocks domain {target}")
             return True
@@ -533,7 +535,7 @@ class Wilbot:
             print(f"⚠️ User {acct_with_id} is not blocked{', their entire domain is' if blocked == -1 else ''}")
             return False
         if not Wilbot.confirm(f"{'Block' if block else 'Unblock'} {acct_with_id}?"):
-            return Wilbot.cancelled()
+            return Wilbot.cancelled_False()
         try:
             new_relationship = self.mdon.account_block(account['id']) if block else self.mdon.account_unblock(account['id'])
             self.log(f"{'⛔' if block else '🆗'} @{self.username} {'' if block else 'un'}blocks {acct_with_id}")
@@ -636,7 +638,7 @@ class Wilbot:
         return c.lower() == 'y' or c.lower() == 'yes' or (default == 'y' and c == '')
 
     @staticmethod
-    def is_in(inp: str) -> str:
+    def is_in(inp: str) -> str | None:
         """If inp is in one of the command tuples listed in Wilbot.commands, return the command, else None"""
         for command,acceptable in Wilbot.commands.items():
             if inp.lower() in acceptable:
@@ -644,16 +646,20 @@ class Wilbot:
         return None
     
     @staticmethod
-    def cancelled(return_value: bool | None = False) -> bool | None:
+    def cancelled() -> None:
         print("Cancelled")
-        return return_value
+
+    @staticmethod
+    def cancelled_False() -> bool:
+        Wilbot.cancelled()
+        return False
 
     @staticmethod
     def csv_to_tuple(s: str) -> tuple:
         return tuple(i.strip() for i in s.split(','))
 
 
-def main(args: list) -> None:
+def main(args: list) -> int:
     """Interactive bot back-end"""
 
     config_file = args[1] if len(args) > 1 else 'wilbot.ini'
@@ -664,11 +670,13 @@ def main(args: list) -> None:
             wilbot.do_help()
             wilbot.do_info()
 
-            session = PromptSession()
+            session: PromptSession = PromptSession()
 
         # Main loop
         while wilbot.run:
             wilbot.do(session.prompt(HTML("<ansibrightgreen>></ansibrightgreen> ")))
+
+    return 0
 
 
 if __name__ == '__main__':
