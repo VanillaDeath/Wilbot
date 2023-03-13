@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 import os
 import datetime
@@ -99,7 +100,7 @@ class Wilbot:
 
         self.init = True
 
-    def __enter__(self):
+    def __enter__(self) -> Wilbot:
         # Short-circuit if __init__ didn't finish
         if not self.init:
             return self
@@ -165,7 +166,7 @@ class Wilbot:
 
         return self
 
-    def __exit__(self, *a):
+    def __exit__(self, *a) -> None:
         if not self.init:
             return
         # Set bot to Offline
