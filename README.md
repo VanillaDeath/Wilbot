@@ -9,7 +9,7 @@ This script allows you to turn a Mastodon account into a chatbot that can form b
 ## Usage
 Install the following modules:
 ```bash
-pip3 install Mastodon.py megahal bs4 pytz
+pip3 install Mastodon.py megahal prompt_toolkit bs4 pytz
 ```
  
 Run:
