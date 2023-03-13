@@ -666,11 +666,13 @@ def main(args: list) -> int:
 
     with Wilbot(config_file=config_file) as wilbot:
 
-        if wilbot.run:
-            wilbot.do_help()
-            wilbot.do_info()
+        if not wilbot.run:
+            return 1
 
-            session: PromptSession = PromptSession()
+        wilbot.do_help()
+        wilbot.do_info()
+
+        session: PromptSession = PromptSession()
 
         # Main loop
         while wilbot.run:
