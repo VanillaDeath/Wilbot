@@ -205,6 +205,7 @@ class Wilbot:
         return True
     
     def log_error(self, err, message: str = "", log_to_file: bool = True) -> None:
+        """Log error one-liner to file, full error output to screen"""
         self.log(f"* @{self.acct} experienced an error{(' ' + message) if message else ''}", log_to_file=log_to_file)
         print(err)
 
@@ -275,10 +276,7 @@ class Wilbot:
             return False
         # Message without HTML, mentions, or hashtags
         message = Wilbot.strip_special(text)
-        #if len(message) == 0:
-            # Empty msg!
-            #return False
-        
+
         self.log(f"{Wilbot.visibilities[visibility]} <@{acct_name}> {text}")
         learn = visibility == 'public' and len(message) > 0
         learn_msg = f"💭 @{self.acct} learns from @{acct_name}: {message}" if learn else f"🚫 Not learning post ({'visibility not public' if visibility != 'public' else 'empty message'})"
@@ -325,6 +323,7 @@ class Wilbot:
                 self.log_error(err, "posting to Mastodon")
                 return False
             return status
+        
         return None
 
     def handle_notification(self, notification: dict) -> bool:
@@ -383,7 +382,7 @@ class Wilbot:
         return status
 
     def do(self, input_string: str):
-        """Handles command inputs. Returns False for exit, True otherwise."""
+        """Handles command inputs."""
         input_string = input_string.strip()
         prefix_length = len(Wilbot.command_prefix)
         # No command, just give a reply (nolearn) to the input
@@ -424,10 +423,12 @@ class Wilbot:
                 return False
 
     def do_exit(self) -> bool:
+        """Prompt whether to exit"""
         self.run = not yes_no_dialog(title="Exit", text="Stop the bot and exit?").run()
         return self.run
 
     def do_follow_unfollow(self, acct: dict, follow=True) -> dict | None:
+        """Bot follows/unfollows user"""
         try:
             new_relationship = self.mdon.account_follow(acct['id'], reblogs=False, notify=True) if follow else self.mdon.account_unfollow(acct['id'])
             self.log(
@@ -556,11 +557,13 @@ class Wilbot:
             print(f"· {block}")
 
     def do_info(self) -> None:
+        """Output some basic stats about bot"""
         self.info = self.mdon.me()
         print(HTML(f"<b>{self.acct}</b> ({self.info['display_name']}) has <b>{self.info['followers_count']}</b> followers, is following <b>{self.info['following_count']}</b> users, "
                    f"posted <b>{self.info['statuses_count']}</b> statuses, and blocks <b>{len(self.mdon.blocks())}</b> users and <b>{len(self.mdon.domain_blocks())}</b> domains"))
 
     def do_tail(self) -> None:
+        """Show last lines of log file"""
         Wilbot.tail(filename=self.log_filename, lines=Wilbot.recap_log_lines, wrap=True)
 
     def do_help(self) -> None:
@@ -648,15 +651,18 @@ class Wilbot:
     
     @staticmethod
     def cancelled() -> None:
+        """return this to print Cancelled and return None"""
         print("Cancelled")
 
     @staticmethod
     def cancelled_False() -> bool:
+        """return this to print Cancelled and return False"""
         Wilbot.cancelled()
         return False
 
     @staticmethod
     def csv_to_tuple(s: str) -> tuple:
+        """Takes comma-separated strings and turns them into a tuple"""
         return tuple(i.strip() for i in s.split(','))
 
 
