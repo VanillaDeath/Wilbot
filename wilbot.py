@@ -559,8 +559,10 @@ class Wilbot:
     def do_info(self) -> None:
         """Output some basic stats about bot"""
         self.info = self.mdon.me()
+        filesize = round(os.path.getsize(self.brain_filename) / 1000000, 1)
         print(HTML(f"<b>{self.acct}</b> ({self.info['display_name']}) has <b>{self.info['followers_count']}</b> followers, is following <b>{self.info['following_count']}</b> users, "
-                   f"posted <b>{self.info['statuses_count']}</b> statuses, and blocks <b>{len(self.mdon.blocks())}</b> users and <b>{len(self.mdon.domain_blocks())}</b> domains"))
+                   f"posted <b>{self.info['statuses_count']}</b> statuses, and blocks <b>{len(self.mdon.blocks())}</b> users and <b>{len(self.mdon.domain_blocks())}</b> domains\n"
+                   f"Brain file {self.brain_filename} is {filesize} MB"))
 
     def do_tail(self) -> None:
         """Show last lines of log file"""
